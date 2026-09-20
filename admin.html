@@ -90,3 +90,26 @@
         const factores = generarFactoresDiarios(tasaObjetivo, dias);
 
         const nuevoPeriodo = {
+          fecha_inicio: fechaInicio.toISOString().slice(0, 10),
+          fecha_fin: fechaFin.toISOString().slice(0, 10),
+          tipo: dias === 30 ? "Mensual" : "Quincenal",
+          tasa_objetivo: tasaObjetivo,
+          valor_inicial: valorInicial,
+          factores,
+          publicado_por: usuarioActual.uid,
+        };
+
+        const nuevaRef = push(ref(db, "tasas_periodo"));
+        await set(nuevaRef, nuevoPeriodo);
+
+        resultado.textContent = `¡Publicado! Del ${nuevoPeriodo.fecha_inicio} al ${nuevoPeriodo.fecha_fin}, empezando en $${valorInicial.toFixed(2)}.`;
+        resultado.style.color = "green";
+        e.target.reset();
+      } catch (err) {
+        resultado.textContent = `Error: ${err.message}`;
+        resultado.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>
