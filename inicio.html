@@ -2,19 +2,45 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inicio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <p><a href="historial.html">Ver historial</a></p>
-  <p id="quien">Cargando...</p>
+  <div class="nav">
+    <span class="usuario" id="quien">Cargando...</span>
+    <a href="historial.html">Ver historial</a>
+  </div>
 
-  <p style="font-size:14px; color:#666;">Saldo actual</p>
-  <p id="saldo" style="font-size:32px; font-weight:bold;">$0</p>
-  <p id="ganancia" style="font-size:14px;"></p>
+  <p class="etiqueta">Saldo actual</p>
+  <p class="saldo" id="saldo">$0</p>
+  <p class="ganancia neutra" id="ganancia"></p>
 
-  <div>
-    <button id="btnInvertir">Invertir</button>
-    <button id="btnRetirar">Retirar</button>
+  <div class="botones">
+    <button id="btnInvertir" class="boton-primario">Invertir</button>
+    <button id="btnRetirar" class="boton-secundario">Retirar</button>
+  </div>
+
+  <div class="panel">
+    <div class="chips">
+      <button class="chip chip-modo activo" data-modo="pct">%</button>
+      <button class="chip chip-modo" data-modo="monto">$</button>
+    </div>
+    <div class="chips">
+      <button class="chip chip-rango" data-rango="Ayer">Ayer</button>
+      <button class="chip chip-rango" data-rango="Hoy">Hoy</button>
+      <button class="chip chip-rango" data-rango="7D">7D</button>
+      <button class="chip chip-rango" data-rango="30D">30D</button>
+      <button class="chip chip-rango" data-rango="2M">2M</button>
+      <button class="chip chip-rango" data-rango="3M">3M</button>
+      <button class="chip chip-rango" data-rango="6M">6M</button>
+      <button class="chip chip-rango" data-rango="1A">1A</button>
+      <button class="chip chip-rango activo" data-rango="Todo">Todo</button>
+    </div>
+    <div id="grafico"></div>
   </div>
 
   <script type="module">
@@ -38,6 +64,13 @@
     const db = getDatabase(app);
 
     let usuarioActual = null;
+    let serieCompleta = [];
+    let rangoActual = "Todo";
+    let modoActual = "pct";
+
+    const RANGOS = {
+      Ayer: 2, Hoy: 2, "7D": 7, "30D": 30, "2M": 60, "3M": 90, "6M": 180, "1A": 365, Todo: null,
+    };
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -46,40 +79,36 @@
       }
       usuarioActual = user;
       document.getElementById("quien").textContent = user.email;
-      await cargarDatos();
+      await cargarSaldoYGanancia();
+      serieCompleta = await construirSerieCompleta();
+      dibujarGrafico();
     });
 
-    async function cargarDatos() {
+    async function cargarSaldoYGanancia() {
       const snapUsuario = await get(ref(db, `usuarios/${usuarioActual.uid}`));
       const datosUsuario = snapUsuario.val() || { unidades_totales: 0 };
 
       const snapPeriodos = await get(ref(db, "tasas_periodo"));
       const periodos = snapPeriodos.val() ? Object.values(snapPeriodos.val()) : [];
       const periodoHoy = periodoParaFecha(periodos, new Date());
-
-      let valorCuotaHoy = 1000;
-      if (periodoHoy) {
-        valorCuotaHoy = valorCuotaEnFecha(periodoHoy, new Date());
-      }
+      const valorCuotaHoy = periodoHoy ? valorCuotaEnFecha(periodoHoy, new Date()) : 1000;
 
       const patrimonio = (datosUsuario.unidades_totales || 0) * valorCuotaHoy;
-
-      document.getElementById("saldo").textContent =
-        "$" + Math.round(patrimonio).toLocaleString("es-CL");
+      document.getElementById("saldo").textContent = "$" + Math.round(patrimonio).toLocaleString("es-CL");
 
       const snapMov = await get(ref(db, `movimientos/${usuarioActual.uid}`));
       const movimientos = snapMov.val() ? Object.values(snapMov.val()) : [];
-      const misMovimientos = movimientos.filter((m) => m.estado === "Aprobado");
+      const aprobados = movimientos.filter((m) => m.estado === "Aprobado");
 
       const gananciaEl = document.getElementById("ganancia");
 
-      if (misMovimientos.length === 0) {
+      if (aprobados.length === 0) {
         gananciaEl.textContent = "Aún no hay aportes registrados";
-        gananciaEl.style.color = "#999";
+        gananciaEl.className = "ganancia neutra";
         return;
       }
 
-      const totalAportado = misMovimientos.reduce((acc, m) => {
+      const totalAportado = aprobados.reduce((acc, m) => {
         if (m.tipo === "Aporte") return acc + m.monto;
         if (m.tipo === "Retiro") return acc - m.monto;
         return acc;
@@ -89,9 +118,132 @@
       const gananciaPct = totalAportado > 0 ? (ganancia / totalAportado) * 100 : 0;
       const signo = ganancia >= 0 ? "+" : "";
 
-      gananciaEl.textContent = `${signo}$${Math.round(ganancia).toLocaleString("es-CL")} · ${signo}${gananciaPct.toFixed(1)}%`;
-      gananciaEl.style.color = ganancia >= 0 ? "green" : "red";
+      gananciaEl.textContent = `${signo}$${Math.round(ganancia).toLocaleString("es-CL")} (${signo}${gananciaPct.toFixed(1)}%)`;
+      gananciaEl.className = "ganancia " + (ganancia >= 0 ? "positiva" : "negativa");
     }
+
+    async function construirSerieCompleta() {
+      const snapPeriodos = await get(ref(db, "tasas_periodo"));
+      const periodos = snapPeriodos.val() ? Object.values(snapPeriodos.val()) : [];
+      periodos.sort((a, b) => (a.fecha_inicio < b.fecha_inicio ? -1 : 1));
+      if (periodos.length === 0) return [];
+
+      const snapMov = await get(ref(db, `movimientos/${usuarioActual.uid}`));
+      const movs = snapMov.val() ? Object.values(snapMov.val()) : [];
+      const aprobados = movs
+        .filter((m) => m.estado === "Aprobado")
+        .sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+
+      const inicioTotal = new Date(periodos[0].fecha_inicio);
+      const hoy = new Date();
+
+      const serie = [];
+      let unidadesAcumuladas = 0;
+      let idxMov = 0;
+
+      for (let d = new Date(inicioTotal); d <= hoy; d.setDate(d.getDate() + 1)) {
+        const fechaStr = d.toISOString().slice(0, 10);
+
+        while (idxMov < aprobados.length && aprobados[idxMov].fecha <= fechaStr) {
+          const m = aprobados[idxMov];
+          const periodoMov = periodoParaFecha(periodos, new Date(m.fecha));
+          const vc = periodoMov ? valorCuotaEnFecha(periodoMov, new Date(m.fecha)) : 1000;
+          const unidades = m.monto / vc;
+          unidadesAcumuladas += m.tipo === "Aporte" ? unidades : -unidades;
+          idxMov++;
+        }
+
+        const periodoDelDia = periodoParaFecha(periodos, new Date(fechaStr));
+        const valorCuotaDelDia = periodoDelDia ? valorCuotaEnFecha(periodoDelDia, new Date(fechaStr)) : 1000;
+        serie.push({ fecha: fechaStr, valor: unidadesAcumuladas * valorCuotaDelDia });
+      }
+
+      return serie;
+    }
+
+    function filtrarPorRango(serie, dias) {
+      if (dias === null) return serie;
+      return serie.slice(-Math.max(dias, 2));
+    }
+
+    function dibujarGrafico() {
+      const contenedor = document.getElementById("grafico");
+      const datos = filtrarPorRango(serieCompleta, RANGOS[rangoActual]);
+
+      if (datos.length < 2) {
+        contenedor.innerHTML = '<p class="texto-suave">Aún no hay suficiente historia para graficar.</p>';
+        return;
+      }
+
+      let valores;
+      if (modoActual === "pct") {
+        const base = datos[0].valor;
+        valores = datos.map((p) => (base > 0 ? (p.valor / base - 1) * 100 : 0));
+      } else {
+        valores = datos.map((p) => p.valor);
+      }
+
+      const min = Math.min(...valores);
+      const max = Math.max(...valores);
+      const rango = max - min || 1;
+
+      const W = 300, H = 150, padL = 46, padB = 20, padT = 10;
+      const plotW = W - padL - 4;
+      const plotH = H - padB - padT;
+
+      const puntos = valores
+        .map((v, i) => {
+          const x = padL + (i / (valores.length - 1)) * plotW;
+          const y = padT + (1 - (v - min) / rango) * plotH;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(" ");
+
+      const colorLinea = valores[valores.length - 1] >= valores[0] ? "var(--exito)" : "var(--perdida)";
+
+      const fmt = (v) =>
+        modoActual === "pct"
+          ? `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`
+          : `$${Math.round(v).toLocaleString("es-CL")}`;
+
+      const fechaCorta = (f) => f.slice(5).replace("-", "/");
+      const fechaIni = fechaCorta(datos[0].fecha);
+      const fechaFin = fechaCorta(datos[datos.length - 1].fecha);
+      const fechaMedio = fechaCorta(datos[Math.floor(datos.length / 2)].fecha);
+
+      contenedor.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:150px; display:block;" role="img" aria-label="Gráfico de evolución del patrimonio">
+          <line x1="${padL}" y1="${padT}" x2="${W}" y2="${padT}" stroke="var(--linea)" stroke-width="0.5"/>
+          <line x1="${padL}" y1="${padT + plotH / 2}" x2="${W}" y2="${padT + plotH / 2}" stroke="var(--linea)" stroke-width="0.5"/>
+          <line x1="${padL}" y1="${padT + plotH}" x2="${W}" y2="${padT + plotH}" stroke="var(--linea)" stroke-width="0.5"/>
+          <text x="0" y="${padT + 4}" font-size="9" fill="var(--texto-suave)">${fmt(max)}</text>
+          <text x="0" y="${padT + plotH / 2 + 3}" font-size="9" fill="var(--texto-suave)">${fmt(min + rango / 2)}</text>
+          <text x="0" y="${padT + plotH + 3}" font-size="9" fill="var(--texto-suave)">${fmt(min)}</text>
+          <polyline points="${puntos}" fill="none" stroke="${colorLinea}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <text x="${padL}" y="${H - 4}" font-size="9" fill="var(--texto-suave)" text-anchor="start">${fechaIni}</text>
+          <text x="${(padL + W) / 2}" y="${H - 4}" font-size="9" fill="var(--texto-suave)" text-anchor="middle">${fechaMedio}</text>
+          <text x="${W - 2}" y="${H - 4}" font-size="9" fill="var(--texto-suave)" text-anchor="end">${fechaFin}</text>
+        </svg>
+      `;
+    }
+
+    document.querySelectorAll(".chip-rango").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".chip-rango").forEach((b) => b.classList.remove("activo"));
+        btn.classList.add("activo");
+        rangoActual = btn.dataset.rango;
+        dibujarGrafico();
+      });
+    });
+
+    document.querySelectorAll(".chip-modo").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".chip-modo").forEach((b) => b.classList.remove("activo"));
+        btn.classList.add("activo");
+        modoActual = btn.dataset.modo;
+        dibujarGrafico();
+      });
+    });
 
     async function crearSolicitud(tipo) {
       const etiqueta = tipo === "Aporte" ? "invertir" : "retirar";

@@ -2,17 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inversión Hijos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Inversión Hijos</h1>
-
-  <form id="loginForm">
-    <input id="usuario" type="text" placeholder="Usuario" required />
-    <input id="clave" type="password" placeholder="Clave" required minlength="6" />
-    <button type="submit">Entrar</button>
-  </form>
-  <p id="resultado" style="color:red;"></p>
+  <div class="login-box">
+    <h1>Inversión Hijos</h1>
+    <form id="loginForm">
+      <input id="usuario" type="text" placeholder="Usuario" required autocomplete="username" />
+      <input id="clave" type="password" placeholder="Clave" required minlength="6" autocomplete="current-password" />
+      <button type="submit" class="boton-primario boton-ancho">Entrar</button>
+    </form>
+    <p id="resultado" class="error"></p>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";

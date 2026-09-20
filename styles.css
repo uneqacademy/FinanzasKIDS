@@ -1,0 +1,155 @@
+:root {
+  --bg: #0B1220;
+  --superficie: #141E2C;
+  --ink: #EAEFF5;
+  --texto-suave: #8A96A8;
+  --linea: #22303F;
+  --linea-fuerte: #3A4658;
+
+  --azul: #3D7DD8;
+  --azul-suave: #16283F;
+
+  --exito: #3FBF7F;
+  --exito-suave: #163A2A;
+
+  --perdida: #E2574A;
+  --perdida-suave: #3B1E1B;
+
+  --pendiente: #E0B15F;
+  --pendiente-suave: #3B2F1A;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 28px 20px 60px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+a { color: var(--azul); font-weight: 600; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 28px;
+  font-size: 14px;
+}
+.nav .usuario { color: var(--texto-suave); }
+
+.tabs {
+  display: flex;
+  gap: 22px;
+  margin-bottom: 28px;
+  border-bottom: 1.5px solid var(--linea);
+}
+.tab {
+  padding-bottom: 10px;
+  font-weight: 700;
+  color: var(--texto-suave);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  text-decoration: none;
+  font-size: 15px;
+}
+.tab.activo { color: var(--ink); border-bottom-color: var(--azul); }
+
+.etiqueta { font-size: 14px; color: var(--texto-suave); margin: 0 0 4px; }
+
+.saldo {
+  font-size: 46px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.ganancia { font-size: 16px; font-weight: 700; margin: 0 0 26px; }
+.ganancia.positiva { color: var(--exito); }
+.ganancia.negativa { color: var(--perdida); }
+.ganancia.neutra { color: var(--texto-suave); font-weight: 500; }
+
+.botones { display: flex; gap: 10px; margin-bottom: 26px; }
+
+button {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1.5px solid var(--linea-fuerte);
+  background: transparent;
+  color: var(--ink);
+  padding: 13px 18px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+.boton-primario { background: var(--azul); border-color: var(--azul); color: #F5F8FC; flex: 1; }
+.boton-secundario { flex: 1; }
+.boton-ancho { width: 100%; }
+
+.panel {
+  border: 1.5px solid var(--linea);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--superficie);
+  margin-bottom: 20px;
+}
+
+h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--linea-fuerte);
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+.chip.activo { background: var(--azul); border-color: var(--azul); color: #F5F8FC; }
+
+.fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--linea);
+}
+.fila:last-child { border-bottom: none; }
+
+.pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.pill.aprobado { background: var(--exito-suave); color: var(--exito); }
+.pill.pendiente { background: var(--pendiente-suave); color: var(--pendiente); }
+.pill.rechazado { background: var(--perdida-suave); color: var(--perdida); }
+
+.texto-suave { color: var(--texto-suave); font-size: 14px; }
+
+.login-box { margin-top: 22vh; }
+.login-box h1 { font-size: 22px; margin: 0 0 22px; color: var(--ink); }
+.login-box input {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  font-size: 16px;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--linea-fuerte);
+  margin-bottom: 12px;
+  background: var(--superficie);
+  color: var(--ink);
+}
+.login-box input::placeholder { color: var(--texto-suave); }
+.login-box input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
+.error { color: var(--perdida); font-size: 14px; }
