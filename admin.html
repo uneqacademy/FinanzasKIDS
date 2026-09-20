@@ -191,7 +191,7 @@
         const nuevaRef = push(ref(db, "tasas_periodo"));
         await set(nuevaRef, nuevoPeriodo);
 
-        resultado.textContent = `¡Publicado! Del ${nuevoPeriodo.fecha_inicio} al ${nuevoPeriodo.fecha_fin}, empezando en $${valorInicial.toFixed(2)}.`;
+        resultado.textContent = `¡Publicado! Del ${nuevoPeriodo.fecha_inicio} al ${nuevoPeriodo.fecha_fin}, empezando en $${Math.round(valorInicial).toLocaleString("es-CL")}.`;
         resultado.style.color = "green";
         e.target.reset();
       } catch (err) {
