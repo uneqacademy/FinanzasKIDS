@@ -19,7 +19,9 @@
   --pendiente-suave: #3B2F1A;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html { background: var(--bg); }
 
 body {
   margin: 0;
@@ -31,6 +33,11 @@ body {
   max-width: 420px;
   margin-left: auto;
   margin-right: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 360px) {
+  .saldo { font-size: 38px; }
 }
 
 a { color: var(--azul); font-weight: 600; text-decoration: none; }
@@ -89,7 +96,11 @@ button {
   background: transparent;
   color: var(--ink);
   padding: 13px 18px;
+  min-height: 48px;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 button:disabled { opacity: 0.5; cursor: default; }
 
@@ -107,16 +118,21 @@ button:disabled { opacity: 0.5; cursor: default; }
 
 h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
 
-.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .chip {
+  font-family: inherit;
   font-size: 13px;
   font-weight: 700;
-  padding: 5px 12px;
+  padding: 8px 14px;
+  min-height: 38px;
   border-radius: 999px;
   border: 1.5px solid var(--linea-fuerte);
   background: transparent;
   color: var(--texto-suave);
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 .chip.activo { background: var(--azul); border-color: var(--azul); color: #F5F8FC; }
 
@@ -144,11 +160,14 @@ h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
   font-family: inherit;
   font-size: 16px;
   padding: 13px 14px;
+  min-height: 48px;
   border-radius: 10px;
   border: 1.5px solid var(--linea-fuerte);
   margin-bottom: 12px;
   background: var(--superficie);
   color: var(--ink);
+  -webkit-appearance: none;
+  appearance: none;
 }
 .login-box input::placeholder { color: var(--texto-suave); }
 .login-box input:focus { outline: 2px solid var(--azul); outline-offset: 1px; }
