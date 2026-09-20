@@ -5,12 +5,18 @@
   <title>Inversión Hijos</title>
 </head>
 <body>
-  <h1>Próximamente 🚀</h1>
+  <h1>Prueba de login</h1>
+
+  <form id="loginForm">
+    <input id="usuario" type="text" placeholder="Usuario" required />
+    <input id="clave" type="password" placeholder="Clave" required minlength="6" />
+    <button type="submit">Entrar</button>
+  </form>
+  <p id="resultado"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-    import { getDatabase } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBmbQvh1aP6HJ4cIfng_L0auwIq-4a1awA",
@@ -24,7 +30,22 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getDatabase(app);
+    const DOMINIO_FALSO = "inversion-hijos.local";
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const clave = document.getElementById("clave").value;
+      const resultado = document.getElementById("resultado");
+      try {
+        const cred = await signInWithEmailAndPassword(auth, `${usuario}@${DOMINIO_FALSO}`, clave);
+        resultado.textContent = `¡Funcionó! Conectado como: ${cred.user.email}`;
+        resultado.style.color = "green";
+      } catch (err) {
+        resultado.textContent = `Error: ${err.code}`;
+        resultado.style.color = "red";
+      }
+    });
   </script>
 </body>
 </html>
