@@ -46,11 +46,17 @@ a:hover { text-decoration: underline; }
 .nav {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 28px;
-  font-size: 14px;
 }
-.nav .usuario { color: var(--texto-suave); }
+.nav a { font-size: 14px; }
+
+.saludo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
 
 .tabs {
   display: flex;

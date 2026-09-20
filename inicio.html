@@ -13,7 +13,7 @@
 </head>
 <body>
   <div class="nav">
-    <span class="usuario" id="quien">Cargando...</span>
+    <span class="saludo" id="quien">Cargando...</span>
     <a href="historial.html">Ver historial</a>
   </div>
 
@@ -81,7 +81,7 @@
       }
       usuarioActual = user;
       const snapNombre = await get(ref(db, `usuarios/${user.uid}/nombre`));
-      document.getElementById("quien").textContent = `Hola ${snapNombre.val() || user.email}`;
+      document.getElementById("quien").textContent = `¡Hola ${snapNombre.val() || user.email}!`;
       await cargarSaldoYGanancia();
       serieCompleta = await construirSerieCompleta();
       dibujarGrafico();

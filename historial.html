@@ -43,7 +43,7 @@
         return;
       }
       const snapNombre = await get(ref(db, `usuarios/${user.uid}/nombre`));
-      document.getElementById("quien").textContent = `Hola ${snapNombre.val() || user.email}`;
+      document.getElementById("quien").textContent = `¡Hola ${snapNombre.val() || user.email}!`;
 
       const snap = await get(ref(db, `movimientos/${user.uid}`));
       const datos = snap.val() || {};
