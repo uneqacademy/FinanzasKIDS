@@ -66,11 +66,9 @@
       document.getElementById("saldo").textContent =
         "$" + Math.round(patrimonio).toLocaleString("es-CL");
 
-      const snapMov = await get(ref(db, "movimientos"));
+      const snapMov = await get(ref(db, `movimientos/${usuarioActual.uid}`));
       const movimientos = snapMov.val() ? Object.values(snapMov.val()) : [];
-      const misMovimientos = movimientos.filter(
-        (m) => m.usuario_id === usuarioActual.uid && m.estado === "Aprobado"
-      );
+      const misMovimientos = movimientos.filter((m) => m.estado === "Aprobado");
 
       const gananciaEl = document.getElementById("ganancia");
 
@@ -99,9 +97,8 @@
       const monto = parseFloat(prompt(`¿Cuánto quieres ${etiqueta}?`));
       if (!monto || monto <= 0) return;
 
-      const nuevaRef = push(ref(db, "movimientos"));
+      const nuevaRef = push(ref(db, `movimientos/${usuarioActual.uid}`));
       await set(nuevaRef, {
-        usuario_id: usuarioActual.uid,
         tipo,
         monto,
         fecha: new Date().toISOString().slice(0, 10),
