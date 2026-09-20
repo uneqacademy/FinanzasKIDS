@@ -5,14 +5,14 @@
   <title>Inversión Hijos</title>
 </head>
 <body>
-  <h1>Prueba de login</h1>
+  <h1>Inversión Hijos</h1>
 
   <form id="loginForm">
     <input id="usuario" type="text" placeholder="Usuario" required />
     <input id="clave" type="password" placeholder="Clave" required minlength="6" />
     <button type="submit">Entrar</button>
   </form>
-  <p id="resultado"></p>
+  <p id="resultado" style="color:red;"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
@@ -38,12 +38,10 @@
       const clave = document.getElementById("clave").value;
       const resultado = document.getElementById("resultado");
       try {
-        const cred = await signInWithEmailAndPassword(auth, `${usuario}@${DOMINIO_FALSO}`, clave);
-        resultado.textContent = `¡Funcionó! Conectado como: ${cred.user.email}`;
-        resultado.style.color = "green";
+        await signInWithEmailAndPassword(auth, `${usuario}@${DOMINIO_FALSO}`, clave);
+        window.location.href = "inicio.html";
       } catch (err) {
-        resultado.textContent = `Error: ${err.code}`;
-        resultado.style.color = "red";
+        resultado.textContent = "Usuario o clave incorrectos";
       }
     });
   </script>
