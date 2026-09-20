@@ -6,6 +6,25 @@
 </head>
 <body>
   <h1>Próximamente 🚀</h1>
-  <p>Esta página se va a reemplazar por la app real.</p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "PEGA_AQUÍ_TU_APIKEY_NUEVO",
+      authDomain: "PEGA_AQUÍ_TU_AUTHDOMAIN_NUEVO",
+      databaseURL: "PEGA_AQUÍ_TU_DATABASEURL_NUEVO",
+      projectId: "PEGA_AQUÍ_TU_PROJECTID_NUEVO",
+      storageBucket: "PEGA_AQUÍ_TU_STORAGEBUCKET_NUEVO",
+      messagingSenderId: "PEGA_AQUÍ_TU_MESSAGINGSENDERID_NUEVO",
+      appId: "PEGA_AQUÍ_TU_APPID_NUEVO",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+  </script>
 </body>
 </html>
