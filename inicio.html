@@ -5,12 +5,22 @@
   <title>Inicio</title>
 </head>
 <body>
-  <h1>¡Bienvenido!</h1>
   <p id="quien">Cargando...</p>
+
+  <p style="font-size:14px; color:#666;">Saldo actual</p>
+  <p id="saldo" style="font-size:32px; font-weight:bold;">$0</p>
+  <p id="ganancia" style="font-size:14px;"></p>
+
+  <div>
+    <button id="btnInvertir">Invertir</button>
+    <button id="btnRetirar">Retirar</button>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+    import { valorCuotaEnFecha, periodoParaFecha } from "./motor.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBmbQvh1aP6HJ4cIfng_L0auwIq-4a1awA",
@@ -24,14 +34,85 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getDatabase(app);
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById("quien").textContent = `Sesión iniciada como: ${user.email}`;
-      } else {
+    let usuarioActual = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
         window.location.href = "index.html";
+        return;
       }
+      usuarioActual = user;
+      document.getElementById("quien").textContent = user.email;
+      await cargarDatos();
     });
+
+    async function cargarDatos() {
+      const snapUsuario = await get(ref(db, `usuarios/${usuarioActual.uid}`));
+      const datosUsuario = snapUsuario.val() || { unidades_totales: 0 };
+
+      const snapPeriodos = await get(ref(db, "tasas_periodo"));
+      const periodos = snapPeriodos.val() ? Object.values(snapPeriodos.val()) : [];
+      const periodoHoy = periodoParaFecha(periodos, new Date());
+
+      let valorCuotaHoy = 1000;
+      if (periodoHoy) {
+        valorCuotaHoy = valorCuotaEnFecha(periodoHoy, new Date());
+      }
+
+      const patrimonio = (datosUsuario.unidades_totales || 0) * valorCuotaHoy;
+
+      document.getElementById("saldo").textContent =
+        "$" + Math.round(patrimonio).toLocaleString("es-CL");
+
+      const snapMov = await get(ref(db, "movimientos"));
+      const movimientos = snapMov.val() ? Object.values(snapMov.val()) : [];
+      const misMovimientos = movimientos.filter(
+        (m) => m.usuario_id === usuarioActual.uid && m.estado === "Aprobado"
+      );
+
+      const gananciaEl = document.getElementById("ganancia");
+
+      if (misMovimientos.length === 0) {
+        gananciaEl.textContent = "Aún no hay aportes registrados";
+        gananciaEl.style.color = "#999";
+        return;
+      }
+
+      const totalAportado = misMovimientos.reduce((acc, m) => {
+        if (m.tipo === "Aporte") return acc + m.monto;
+        if (m.tipo === "Retiro") return acc - m.monto;
+        return acc;
+      }, 0);
+
+      const ganancia = patrimonio - totalAportado;
+      const gananciaPct = totalAportado > 0 ? (ganancia / totalAportado) * 100 : 0;
+      const signo = ganancia >= 0 ? "+" : "";
+
+      gananciaEl.textContent = `${signo}$${Math.round(ganancia).toLocaleString("es-CL")} · ${signo}${gananciaPct.toFixed(1)}%`;
+      gananciaEl.style.color = ganancia >= 0 ? "green" : "red";
+    }
+
+    async function crearSolicitud(tipo) {
+      const etiqueta = tipo === "Aporte" ? "invertir" : "retirar";
+      const monto = parseFloat(prompt(`¿Cuánto quieres ${etiqueta}?`));
+      if (!monto || monto <= 0) return;
+
+      const nuevaRef = push(ref(db, "movimientos"));
+      await set(nuevaRef, {
+        usuario_id: usuarioActual.uid,
+        tipo,
+        monto,
+        fecha: new Date().toISOString().slice(0, 10),
+        estado: "Pendiente",
+      });
+
+      alert("¡Listo! Tu solicitud quedó pendiente de aprobación.");
+    }
+
+    document.getElementById("btnInvertir").addEventListener("click", () => crearSolicitud("Aporte"));
+    document.getElementById("btnRetirar").addEventListener("click", () => crearSolicitud("Retiro"));
   </script>
 </body>
 </html>
