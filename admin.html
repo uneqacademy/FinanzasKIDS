@@ -111,13 +111,29 @@
           <button class="btnAprobar">Aprobar</button>
           <button class="btnRechazar">Rechazar</button>
         `;
-        div.querySelector(".btnAprobar").addEventListener("click", () => procesar(p, "Aprobado"));
-        div.querySelector(".btnRechazar").addEventListener("click", () => procesar(p, "Rechazado"));
+        const btnAprobar = div.querySelector(".btnAprobar");
+        const btnRechazar = div.querySelector(".btnRechazar");
+        btnAprobar.addEventListener("click", () => {
+          btnAprobar.disabled = true;
+          btnRechazar.disabled = true;
+          procesar(p, "Aprobado");
+        });
+        btnRechazar.addEventListener("click", () => {
+          btnAprobar.disabled = true;
+          btnRechazar.disabled = true;
+          procesar(p, "Rechazado");
+        });
         contenedor.appendChild(div);
       }
     }
 
     async function procesar(p, nuevoEstado) {
+      const snapActual = await get(ref(db, `movimientos/${p.uid}/${p.movId}`));
+      if ((snapActual.val() || {}).estado !== "Pendiente") {
+        await cargarPendientes();
+        return;
+      }
+
       if (nuevoEstado === "Aprobado") {
         const cuotaHoy = await valorCuotaHoy();
         const unidades = p.monto / cuotaHoy;
