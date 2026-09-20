@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Historial</title>
+</head>
+<body>
+  <p><a href="inicio.html">Volver a Inicio</a></p>
+  <p id="quien">Cargando...</p>
+
+  <div>
+    <button id="btnAportes">Aportes</button>
+    <button id="btnRetiros">Retiros</button>
+  </div>
+
+  <div id="lista">Cargando...</div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmbQvh1aP6HJ4cIfng_L0auwIq-4a1awA",
+      authDomain: "finanzaskidsgb.firebaseapp.com",
+      databaseURL: "https://finanzaskidsgb-default-rtdb.firebaseio.com",
+      projectId: "finanzaskidsgb",
+      storageBucket: "finanzaskidsgb.firebasestorage.app",
+      messagingSenderId: "847408719363",
+      appId: "1:847408719363:web:d9301376fef801e2259036"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let movimientos = [];
+    let filtroActual = "Aporte";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      document.getElementById("quien").textContent = user.email;
+
+      const snap = await get(ref(db, `movimientos/${user.uid}`));
+      const datos = snap.val() || {};
+      movimientos = Object.values(datos).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+
+      render();
+    });
+
+    function render() {
+      const lista = document.getElementById("lista");
+      const filtrados = movimientos.filter((m) => m.tipo === filtroActual);
+
+      if (filtrados.length === 0) {
+        lista.textContent = `No hay ${filtroActual === "Aporte" ? "aportes" : "retiros"} registrados.`;
+        return;
+      }
+
+      lista.innerHTML = "";
+      for (const m of filtrados) {
+        const color = m.estado === "Aprobado" ? "green" : m.estado === "Pendiente" ? "orange" : "red";
+        const div = document.createElement("div");
+        div.style.borderBottom = "1px solid #eee";
+        div.style.padding = "8px 0";
+        div.innerHTML = `
+          ${m.fecha} — $${m.monto.toLocaleString("es-CL")} —
+          <span style="color:${color};">${m.estado}</span>
+        `;
+        lista.appendChild(div);
+      }
+    }
+
+    document.getElementById("btnAportes").addEventListener("click", () => {
+      filtroActual = "Aporte";
+      render();
+    });
+    document.getElementById("btnRetiros").addEventListener("click", () => {
+      filtroActual = "Retiro";
+      render();
+    });
+  </script>
+</body>
+</html>
