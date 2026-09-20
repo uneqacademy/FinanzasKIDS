@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel Admin</title>
+</head>
+<body>
+  <h1>Panel Admin</h1>
+  <p id="quien">Cargando...</p>
+
+  <form id="tasaForm">
+    <label>
+      Periodicidad:
+      <select id="tipoPeriodo">
+        <option value="30">Mensual (30 días)</option>
+        <option value="15">Quincenal (15 días)</option>
+      </select>
+    </label>
+    <br />
+    <label>
+      Tasa objetivo (%):
+      <input id="tasaObjetivo" type="number" step="0.1" required />
+    </label>
+    <br />
+    <button type="submit">Publicar tasa</button>
+  </form>
+  <p id="resultado"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+    import { generarFactoresDiarios, valorCuotaEnFecha } from "./motor.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmbQvh1aP6HJ4cIfng_L0auwIq-4a1awA",
+      authDomain: "finanzaskidsgb.firebaseapp.com",
+      databaseURL: "https://finanzaskidsgb-default-rtdb.firebaseio.com",
+      projectId: "finanzaskidsgb",
+      storageBucket: "finanzaskidsgb.firebasestorage.app",
+      messagingSenderId: "847408719363",
+      appId: "1:847408719363:web:d9301376fef801e2259036"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let usuarioActual = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      const snap = await get(ref(db, `usuarios/${user.uid}`));
+      const datos = snap.val();
+      if (!datos || datos.rol !== "admin") {
+        document.getElementById("quien").textContent = "No tienes permiso para ver esta página.";
+        document.getElementById("tasaForm").style.display = "none";
+        return;
+      }
+      usuarioActual = user;
+      document.getElementById("quien").textContent = `Admin: ${user.email}`;
+    });
+
+    document.getElementById("tasaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const dias = parseInt(document.getElementById("tipoPeriodo").value, 10);
+      const tasaPorc = parseFloat(document.getElementById("tasaObjetivo").value);
+      const tasaObjetivo = tasaPorc / 100;
+      const resultado = document.getElementById("resultado");
+
+      try {
+        const snap = await get(ref(db, "tasas_periodo"));
+        const periodos = snap.val() ? Object.values(snap.val()) : [];
+
+        let valorInicial = 1000;
+        let fechaInicio = new Date();
+
+        if (periodos.length > 0) {
+          const ultimo = periodos.reduce((a, b) =>
+            new Date(a.fecha_fin) > new Date(b.fecha_fin) ? a : b
+          );
+          valorInicial = valorCuotaEnFecha(ultimo, new Date(ultimo.fecha_fin));
+          fechaInicio = new Date(new Date(ultimo.fecha_fin).getTime() + 86400000);
+        }
+
+        const fechaFin = new Date(fechaInicio.getTime() + (dias - 1) * 86400000);
+        const factores = generarFactoresDiarios(tasaObjetivo, dias);
+
+        const nuevoPeriodo = {
