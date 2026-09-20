@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inicio</title>
+</head>
+<body>
+  <h1>¡Bienvenido!</h1>
+  <p id="quien">Cargando...</p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmbQvh1aP6HJ4cIfng_L0auwIq-4a1awA",
+      authDomain: "finanzaskidsgb.firebaseapp.com",
+      databaseURL: "https://finanzaskidsgb-default-rtdb.firebaseio.com",
+      projectId: "finanzaskidsgb",
+      storageBucket: "finanzaskidsgb.firebasestorage.app",
+      messagingSenderId: "847408719363",
+      appId: "1:847408719363:web:d9301376fef801e2259036"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("quien").textContent = `Sesión iniciada como: ${user.email}`;
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>
