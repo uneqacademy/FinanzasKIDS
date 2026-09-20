@@ -11,6 +11,12 @@
   <h2>Solicitudes pendientes</h2>
   <div id="pendientes">Cargando...</div>
 
+  <h2>Resumen de patrimonio</h2>
+  <div id="resumen">Cargando...</div>
+
+  <h2>Historial de tasas aplicadas</h2>
+  <div id="historialTasas">Cargando...</div>
+
   <h2>Definir tasa del período</h2>
   <form id="tasaForm">
     <label>
@@ -67,6 +73,8 @@
       usuarioActual = user;
       document.getElementById("quien").textContent = `Admin: ${user.email}`;
       await cargarPendientes();
+      await cargarResumen();
+      await cargarHistorialTasas();
     });
 
     async function valorCuotaHoy() {
@@ -127,6 +135,72 @@
       }
     }
 
+    async function cargarResumen() {
+      const contenedor = document.getElementById("resumen");
+      const snapUsuarios = await get(ref(db, "usuarios"));
+      const usuarios = snapUsuarios.val() || {};
+
+      const cuotaHoy = await valorCuotaHoy();
+
+      const snapMov = await get(ref(db, "movimientos"));
+      const movimientosPorUid = snapMov.val() || {};
+
+      contenedor.innerHTML = "";
+      for (const uid in usuarios) {
+        const u = usuarios[uid];
+        if (u.rol !== "hijo") continue;
+
+        const patrimonio = (u.unidades_totales || 0) * cuotaHoy;
+
+        const misMov = movimientosPorUid[uid] ? Object.values(movimientosPorUid[uid]) : [];
+        const aprobados = misMov.filter((m) => m.estado === "Aprobado");
+        const totalAportado = aprobados.reduce((acc, m) => {
+          if (m.tipo === "Aporte") return acc + m.monto;
+          if (m.tipo === "Retiro") return acc - m.monto;
+          return acc;
+        }, 0);
+
+        const ganancia = patrimonio - totalAportado;
+        const gananciaPct = totalAportado > 0 ? (ganancia / totalAportado) * 100 : 0;
+        const signo = ganancia >= 0 ? "+" : "";
+        const color = ganancia >= 0 ? "green" : "red";
+
+        const div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "8px";
+        div.style.marginBottom = "8px";
+        div.innerHTML = `
+          <strong>${u.nombre || uid}</strong><br/>
+          Saldo: $${Math.round(patrimonio).toLocaleString("es-CL")}<br/>
+          <span style="color:${color};">${signo}$${Math.round(ganancia).toLocaleString("es-CL")} · ${signo}${gananciaPct.toFixed(1)}%</span>
+        `;
+        contenedor.appendChild(div);
+      }
+    }
+
+    async function cargarHistorialTasas() {
+      const contenedor = document.getElementById("historialTasas");
+      const snap = await get(ref(db, "tasas_periodo"));
+      const datos = snap.val() || {};
+      const periodos = Object.values(datos).sort((a, b) => (a.fecha_inicio < b.fecha_inicio ? 1 : -1));
+
+      if (periodos.length === 0) {
+        contenedor.textContent = "Aún no hay tasas publicadas.";
+        return;
+      }
+
+      contenedor.innerHTML = "";
+      for (const p of periodos) {
+        const color = p.tasa_objetivo >= 0 ? "green" : "red";
+        const signo = p.tasa_objetivo >= 0 ? "+" : "";
+        const div = document.createElement("div");
+        div.style.borderBottom = "1px solid #eee";
+        div.style.padding = "4px 0";
+        div.innerHTML = `${p.fecha_inicio} a ${p.fecha_fin} — ${p.tipo} — <span style="color:${color};">${signo}${(p.tasa_objetivo * 100).toFixed(1)}%</span>`;
+        contenedor.appendChild(div);
+      }
+    }
+
     async function procesar(p, nuevoEstado) {
       const snapActual = await get(ref(db, `movimientos/${p.uid}/${p.movId}`));
       if ((snapActual.val() || {}).estado !== "Pendiente") {
@@ -151,6 +225,7 @@
       });
 
       await cargarPendientes();
+      await cargarResumen();
     }
 
     document.getElementById("tasaForm").addEventListener("submit", async (e) => {
