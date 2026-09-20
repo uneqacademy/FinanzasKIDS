@@ -71,7 +71,7 @@
         return;
       }
       usuarioActual = user;
-      document.getElementById("quien").textContent = `Admin: ${user.email}`;
+      document.getElementById("quien").textContent = `Hola ${datos.nombre || user.email}`;
       await cargarPendientes();
       await cargarResumen();
       await cargarHistorialTasas();

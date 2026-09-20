@@ -42,7 +42,8 @@
         window.location.href = "index.html";
         return;
       }
-      document.getElementById("quien").textContent = user.email;
+      const snapNombre = await get(ref(db, `usuarios/${user.uid}/nombre`));
+      document.getElementById("quien").textContent = `Hola ${snapNombre.val() || user.email}`;
 
       const snap = await get(ref(db, `movimientos/${user.uid}`));
       const datos = snap.val() || {};

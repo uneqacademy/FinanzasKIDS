@@ -80,7 +80,8 @@
         return;
       }
       usuarioActual = user;
-      document.getElementById("quien").textContent = user.email;
+      const snapNombre = await get(ref(db, `usuarios/${user.uid}/nombre`));
+      document.getElementById("quien").textContent = `Hola ${snapNombre.val() || user.email}`;
       await cargarSaldoYGanancia();
       serieCompleta = await construirSerieCompleta();
       dibujarGrafico();
