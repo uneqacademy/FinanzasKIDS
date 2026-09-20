@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div style="text-align:right; margin-bottom: 10px;">
+    <a href="#" id="btnCerrarSesion" class="link-muted">Cerrar sesión</a>
+  </div>
   <div class="nav">
     <span class="saludo" id="quien">Cargando...</span>
     <a href="historial.html">Ver historial</a>
@@ -47,7 +50,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
     import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
     import { valorCuotaEnFecha, periodoParaFecha } from "./motor.js";
 
@@ -266,6 +269,11 @@
 
     document.getElementById("btnInvertir").addEventListener("click", () => crearSolicitud("Aporte"));
     document.getElementById("btnRetirar").addEventListener("click", () => crearSolicitud("Retiro"));
+    document.getElementById("btnCerrarSesion").addEventListener("click", async (e) => {
+      e.preventDefault();
+      await signOut(auth);
+      window.location.href = "index.html";
+    });
   </script>
 </body>
 </html>

@@ -58,6 +58,13 @@ a:hover { text-decoration: underline; }
   margin: 0;
 }
 
+.link-muted {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+.link-muted:hover { color: var(--ink); }
+
 .tabs {
   display: flex;
   gap: 22px;
@@ -157,6 +164,55 @@ h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
 .pill.rechazado { background: var(--perdida-suave); color: var(--perdida); }
 
 .texto-suave { color: var(--texto-suave); font-size: 14px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+.metric-card {
+  background: var(--superficie);
+  border: 1.5px solid var(--linea);
+  border-radius: 14px;
+  padding: 14px;
+}
+.metric-card .nombre { font-size: 13px; color: var(--texto-suave); margin: 0 0 6px; font-weight: 600; }
+.metric-card .valor { font-size: 21px; font-weight: 800; margin: 0 0 4px; }
+.metric-card .cambio { font-size: 12px; font-weight: 700; }
+.metric-card .cambio.positiva { color: var(--exito); }
+.metric-card .cambio.negativa { color: var(--perdida); }
+.metric-card .cambio.neutra { color: var(--texto-suave); font-weight: 500; }
+
+select, input[type="number"] {
+  font-family: inherit;
+  font-size: 16px;
+  padding: 12px 14px;
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1.5px solid var(--linea-fuerte);
+  background: var(--superficie);
+  color: var(--ink);
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.campo { margin-bottom: 14px; }
+.campo label { display: block; font-size: 13px; color: var(--texto-suave); margin-bottom: 6px; font-weight: 600; }
+
+.solicitud {
+  border: 1.5px solid var(--linea);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.solicitud .nombre-tipo { font-weight: 700; margin: 0 0 2px; }
+.solicitud .detalle { font-size: 13px; color: var(--texto-suave); margin: 0 0 12px; }
+.solicitud .acciones { display: flex; gap: 8px; }
+.solicitud .acciones button { flex: 1; min-height: 42px; font-size: 14px; }
+.boton-aprobar { border-color: var(--exito); color: var(--exito); }
+.boton-rechazar { border-color: var(--perdida); color: var(--perdida); }
+
+.resultado-msg { font-size: 14px; margin-top: 12px; }
+.resultado-msg.exito { color: var(--exito); }
+.resultado-msg.error { color: var(--perdida); }
 
 .login-box { margin-top: 22vh; }
 .login-box h1 { font-size: 22px; margin: 0 0 22px; color: var(--ink); }

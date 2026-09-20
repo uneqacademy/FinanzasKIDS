@@ -2,22 +2,38 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0B1220" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Historial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <p><a href="inicio.html">Volver a Inicio</a></p>
-  <p id="quien">Cargando...</p>
+  <div style="text-align:right; margin-bottom: 10px;">
+    <a href="#" id="btnCerrarSesion" class="link-muted">Cerrar sesión</a>
+  </div>
+  <p class="saludo" id="quien">Cargando...</p>
 
-  <div>
-    <button id="btnAportes">Aportes</button>
-    <button id="btnRetiros">Retiros</button>
+  <div class="tabs">
+    <a href="inicio.html" class="tab">Inicio</a>
+    <a href="historial.html" class="tab activo">Historial</a>
   </div>
 
-  <div id="lista">Cargando...</div>
+  <div class="chips">
+    <button class="chip activo" id="btnAportes">Aportes</button>
+    <button class="chip" id="btnRetiros">Retiros</button>
+  </div>
+
+  <div class="panel">
+    <div id="lista">Cargando...</div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
     import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -42,6 +58,7 @@
         window.location.href = "index.html";
         return;
       }
+
       const snapNombre = await get(ref(db, `usuarios/${user.uid}/nombre`));
       document.getElementById("quien").textContent = `¡Hola ${snapNombre.val() || user.email}!`;
 
@@ -57,31 +74,42 @@
       const filtrados = movimientos.filter((m) => m.tipo === filtroActual);
 
       if (filtrados.length === 0) {
-        lista.textContent = `No hay ${filtroActual === "Aporte" ? "aportes" : "retiros"} registrados.`;
+        lista.innerHTML = `<p class="texto-suave">No hay ${filtroActual === "Aporte" ? "aportes" : "retiros"} registrados.</p>`;
         return;
       }
 
-      lista.innerHTML = "";
-      for (const m of filtrados) {
-        const color = m.estado === "Aprobado" ? "green" : m.estado === "Pendiente" ? "orange" : "red";
-        const div = document.createElement("div");
-        div.style.borderBottom = "1px solid #eee";
-        div.style.padding = "8px 0";
-        div.innerHTML = `
-          ${m.fecha} — $${m.monto.toLocaleString("es-CL")} —
-          <span style="color:${color};">${m.estado}</span>
-        `;
-        lista.appendChild(div);
-      }
+      lista.innerHTML = filtrados
+        .map((m) => {
+          const clase = m.estado === "Aprobado" ? "aprobado" : m.estado === "Pendiente" ? "pendiente" : "rechazado";
+          return `
+            <div class="fila">
+              <span>${m.fecha}</span>
+              <span style="display:flex; align-items:center; gap:10px;">
+                <strong>$${m.monto.toLocaleString("es-CL")}</strong>
+                <span class="pill ${clase}">${m.estado}</span>
+              </span>
+            </div>
+          `;
+        })
+        .join("");
     }
 
     document.getElementById("btnAportes").addEventListener("click", () => {
       filtroActual = "Aporte";
+      document.getElementById("btnAportes").classList.add("activo");
+      document.getElementById("btnRetiros").classList.remove("activo");
       render();
     });
     document.getElementById("btnRetiros").addEventListener("click", () => {
       filtroActual = "Retiro";
+      document.getElementById("btnRetiros").classList.add("activo");
+      document.getElementById("btnAportes").classList.remove("activo");
       render();
+    });
+    document.getElementById("btnCerrarSesion").addEventListener("click", async (e) => {
+      e.preventDefault();
+      await signOut(auth);
+      window.location.href = "index.html";
     });
   </script>
 </body>

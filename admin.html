@@ -2,43 +2,52 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0B1220" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Panel Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Panel Admin</h1>
-  <p id="quien">Cargando...</p>
-
-  <h2>Solicitudes pendientes</h2>
-  <div id="pendientes">Cargando...</div>
+  <div style="text-align:right; margin-bottom: 10px;">
+    <a href="#" id="btnCerrarSesion" class="link-muted">Cerrar sesión</a>
+  </div>
+  <p class="saludo" id="quien" style="margin-bottom: 24px;">Cargando...</p>
 
   <h2>Resumen de patrimonio</h2>
-  <div id="resumen">Cargando...</div>
+  <div class="grid-2" id="resumen"></div>
 
-  <h2>Historial de tasas aplicadas</h2>
-  <div id="historialTasas">Cargando...</div>
+  <h2>Solicitudes pendientes</h2>
+  <div id="pendientes" style="margin-bottom: 20px;">Cargando...</div>
 
   <h2>Definir tasa del período</h2>
-  <form id="tasaForm">
-    <label>
-      Periodicidad:
-      <select id="tipoPeriodo">
-        <option value="30">Mensual (30 días)</option>
-        <option value="15">Quincenal (15 días)</option>
-      </select>
-    </label>
-    <br />
-    <label>
-      Tasa objetivo (%):
-      <input id="tasaObjetivo" type="number" step="0.1" required />
-    </label>
-    <br />
-    <button type="submit">Publicar tasa</button>
-  </form>
-  <p id="resultado"></p>
+  <div class="panel">
+    <form id="tasaForm">
+      <div class="campo">
+        <label>Periodicidad</label>
+        <select id="tipoPeriodo">
+          <option value="30">Mensual (30 días)</option>
+          <option value="15">Quincenal (15 días)</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Tasa objetivo (%)</label>
+        <input id="tasaObjetivo" type="number" step="0.1" required />
+      </div>
+      <button type="submit" class="boton-primario boton-ancho">Publicar tasa</button>
+    </form>
+    <p id="resultado" class="resultado-msg"></p>
+  </div>
+
+  <h2>Historial de tasas aplicadas</h2>
+  <div class="panel" id="historialTasas">Cargando...</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
     import { getDatabase, ref, get, set, push, update } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
     import { generarFactoresDiarios, valorCuotaEnFecha, periodoParaFecha } from "./motor.js";
 
@@ -84,57 +93,6 @@
       return periodoHoy ? valorCuotaEnFecha(periodoHoy, new Date()) : 1000;
     }
 
-    async function cargarPendientes() {
-      const contenedor = document.getElementById("pendientes");
-      const snap = await get(ref(db, "movimientos"));
-      const datos = snap.val() || {};
-
-      const pendientes = [];
-      for (const uid in datos) {
-        for (const movId in datos[uid]) {
-          const m = datos[uid][movId];
-          if (m.estado === "Pendiente") {
-            pendientes.push({ uid, movId, ...m });
-          }
-        }
-      }
-
-      if (pendientes.length === 0) {
-        contenedor.textContent = "No hay solicitudes pendientes.";
-        return;
-      }
-
-      contenedor.innerHTML = "";
-      for (const p of pendientes) {
-        const snapUsuario = await get(ref(db, `usuarios/${p.uid}`));
-        const nombre = (snapUsuario.val() || {}).nombre || p.uid;
-
-        const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "8px";
-        div.style.marginBottom = "8px";
-        div.innerHTML = `
-          <strong>${nombre}</strong> — ${p.tipo} — $${p.monto.toLocaleString("es-CL")} — ${p.fecha}
-          <br/>
-          <button class="btnAprobar">Aprobar</button>
-          <button class="btnRechazar">Rechazar</button>
-        `;
-        const btnAprobar = div.querySelector(".btnAprobar");
-        const btnRechazar = div.querySelector(".btnRechazar");
-        btnAprobar.addEventListener("click", () => {
-          btnAprobar.disabled = true;
-          btnRechazar.disabled = true;
-          procesar(p, "Aprobado");
-        });
-        btnRechazar.addEventListener("click", () => {
-          btnAprobar.disabled = true;
-          btnRechazar.disabled = true;
-          procesar(p, "Rechazado");
-        });
-        contenedor.appendChild(div);
-      }
-    }
-
     async function cargarResumen() {
       const contenedor = document.getElementById("resumen");
       const snapUsuarios = await get(ref(db, "usuarios"));
@@ -151,7 +109,6 @@
         if (u.rol !== "hijo") continue;
 
         const patrimonio = (u.unidades_totales || 0) * cuotaHoy;
-
         const misMov = movimientosPorUid[uid] ? Object.values(movimientosPorUid[uid]) : [];
         const aprobados = misMov.filter((m) => m.estado === "Aprobado");
         const totalAportado = aprobados.reduce((acc, m) => {
@@ -160,20 +117,75 @@
           return acc;
         }, 0);
 
-        const ganancia = patrimonio - totalAportado;
-        const gananciaPct = totalAportado > 0 ? (ganancia / totalAportado) * 100 : 0;
-        const signo = ganancia >= 0 ? "+" : "";
-        const color = ganancia >= 0 ? "green" : "red";
+        const div = document.createElement("div");
+        div.className = "metric-card";
+
+        if (totalAportado === 0) {
+          div.innerHTML = `
+            <p class="nombre">${u.nombre || uid}</p>
+            <p class="valor">$${Math.round(patrimonio).toLocaleString("es-CL")}</p>
+            <p class="cambio neutra">Sin aportes aún</p>
+          `;
+        } else {
+          const ganancia = patrimonio - totalAportado;
+          const gananciaPct = (ganancia / totalAportado) * 100;
+          const signo = ganancia >= 0 ? "+" : "";
+          const clase = ganancia >= 0 ? "positiva" : "negativa";
+          div.innerHTML = `
+            <p class="nombre">${u.nombre || uid}</p>
+            <p class="valor">$${Math.round(patrimonio).toLocaleString("es-CL")}</p>
+            <p class="cambio ${clase}">${signo}${gananciaPct.toFixed(1)}%</p>
+          `;
+        }
+        contenedor.appendChild(div);
+      }
+    }
+
+    async function cargarPendientes() {
+      const contenedor = document.getElementById("pendientes");
+      const snap = await get(ref(db, "movimientos"));
+      const datos = snap.val() || {};
+
+      const pendientes = [];
+      for (const uid in datos) {
+        for (const movId in datos[uid]) {
+          const m = datos[uid][movId];
+          if (m.estado === "Pendiente") pendientes.push({ uid, movId, ...m });
+        }
+      }
+
+      if (pendientes.length === 0) {
+        contenedor.innerHTML = '<p class="texto-suave">No hay solicitudes pendientes.</p>';
+        return;
+      }
+
+      contenedor.innerHTML = "";
+      for (const p of pendientes) {
+        const snapUsuario = await get(ref(db, `usuarios/${p.uid}`));
+        const nombre = (snapUsuario.val() || {}).nombre || p.uid;
 
         const div = document.createElement("div");
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "8px";
-        div.style.marginBottom = "8px";
+        div.className = "solicitud";
         div.innerHTML = `
-          <strong>${u.nombre || uid}</strong><br/>
-          Saldo: $${Math.round(patrimonio).toLocaleString("es-CL")}<br/>
-          <span style="color:${color};">${signo}$${Math.round(ganancia).toLocaleString("es-CL")} · ${signo}${gananciaPct.toFixed(1)}%</span>
+          <p class="nombre-tipo">${p.tipo} de ${nombre}</p>
+          <p class="detalle">${p.fecha} — $${p.monto.toLocaleString("es-CL")}</p>
+          <div class="acciones">
+            <button class="boton-aprobar">Aprobar</button>
+            <button class="boton-rechazar">Rechazar</button>
+          </div>
         `;
+        const btnAprobar = div.querySelector(".boton-aprobar");
+        const btnRechazar = div.querySelector(".boton-rechazar");
+        btnAprobar.addEventListener("click", () => {
+          btnAprobar.disabled = true;
+          btnRechazar.disabled = true;
+          procesar(p, "Aprobado");
+        });
+        btnRechazar.addEventListener("click", () => {
+          btnAprobar.disabled = true;
+          btnRechazar.disabled = true;
+          procesar(p, "Rechazado");
+        });
         contenedor.appendChild(div);
       }
     }
@@ -185,20 +197,22 @@
       const periodos = Object.values(datos).sort((a, b) => (a.fecha_inicio < b.fecha_inicio ? 1 : -1));
 
       if (periodos.length === 0) {
-        contenedor.textContent = "Aún no hay tasas publicadas.";
+        contenedor.innerHTML = '<p class="texto-suave">Aún no hay tasas publicadas.</p>';
         return;
       }
 
-      contenedor.innerHTML = "";
-      for (const p of periodos) {
-        const color = p.tasa_objetivo >= 0 ? "green" : "red";
-        const signo = p.tasa_objetivo >= 0 ? "+" : "";
-        const div = document.createElement("div");
-        div.style.borderBottom = "1px solid #eee";
-        div.style.padding = "4px 0";
-        div.innerHTML = `${p.fecha_inicio} a ${p.fecha_fin} — ${p.tipo} — <span style="color:${color};">${signo}${(p.tasa_objetivo * 100).toFixed(1)}%</span>`;
-        contenedor.appendChild(div);
-      }
+      contenedor.innerHTML = periodos
+        .map((p) => {
+          const clase = p.tasa_objetivo >= 0 ? "positiva" : "negativa";
+          const signo = p.tasa_objetivo >= 0 ? "+" : "";
+          return `
+            <div class="fila">
+              <span>${p.fecha_inicio} a ${p.fecha_fin}</span>
+              <span class="cambio ${clase}">${signo}${(p.tasa_objetivo * 100).toFixed(1)}%</span>
+            </div>
+          `;
+        })
+        .join("");
     }
 
     async function procesar(p, nuevoEstado) {
@@ -267,12 +281,18 @@
         await set(nuevaRef, nuevoPeriodo);
 
         resultado.textContent = `¡Publicado! Del ${nuevoPeriodo.fecha_inicio} al ${nuevoPeriodo.fecha_fin}, empezando en $${Math.round(valorInicial).toLocaleString("es-CL")}.`;
-        resultado.style.color = "green";
+        resultado.className = "resultado-msg exito";
         e.target.reset();
+        await cargarHistorialTasas();
       } catch (err) {
         resultado.textContent = `Error: ${err.message}`;
-        resultado.style.color = "red";
+        resultado.className = "resultado-msg error";
       }
+    });
+    document.getElementById("btnCerrarSesion").addEventListener("click", async (e) => {
+      e.preventDefault();
+      await signOut(auth);
+      window.location.href = "index.html";
     });
   </script>
 </body>
